@@ -4,17 +4,28 @@ import SectionLabel from '../ui/SectionLabel';
 import { useInView } from '../../hooks/useInView';
 
 const faculty = [
+
   {
-    initials: 'EV',
-    name: 'Dra. Elena Vásquez Reyes',
-    role: 'Directora Académica',
+    initials: 'MR',
+    name: 'Dr. Marco Ramírez Guerrero',
+    role: 'Rector General del Colegio Michel Foucault',
     specialty: 'Psicoanálisis lacaniano · Clínica',
-    bio: 'Psicoanalista y doctora en Psicología por la UNAM. Directora de tesis y supervisora clínica. Autora de trabajos sobre la estructura del sujeto en la obra de Lacan y la relación entre psicoanálisis y política.',
+    bio: `Fundador y Rector General del Colegio Michel Foucault.
+
+    Doctor en Psicoanálisis por el Colegio de Psicoanálisis Lacaniano.
+
+    Maestro en Psicoanálisis Freud-Lacan por el Colegio de Psicoanálisis Lacaniano.
+
+    Maestro en Criminología por el Instituto Nacional de Ciencias Penales (INACIPE).
+
+    Licenciado en Psicología por la Universidad Nacional Autónoma de México (UNAM).`,
     color: '#9b2525',
   },
+
+
   {
     initials: 'RM',
-    name: 'Dr. Rodrigo Montemayor',
+    name: 'Dr. Juan Valdemar',
     role: 'Coordinador de Criminología',
     specialty: 'Criminología crítica · Abolicionismo',
     bio: 'Doctor en Ciencias Sociales. Especialista en criminología crítica latinoamericana, políticas penales y violencias estatales. Miembro de la Red Latinoamericana de Criminología Crítica.',
