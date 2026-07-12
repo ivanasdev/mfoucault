@@ -57,12 +57,14 @@ function PublicSite() {
           <Seminars />
           <Library />
           <Multimedia />
+          <Publications />
+           <Clinic />
           
            
           {/*<AcademicOffer />
          
           
-          <Publications />
+          
           <ResearchLines />
           <Community />
           <Clinic />

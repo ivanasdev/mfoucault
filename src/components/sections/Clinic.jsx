@@ -76,7 +76,7 @@ export default function Clinic() {
 
         {/* Header */}
         <Box sx={{ mb: { xs: 8, md: 11 } }}>
-          <SectionLabel>09 — Clínica Lacaniana</SectionLabel>
+          <SectionLabel>09 — Clínica </SectionLabel>
           <Box
             sx={{
               display: 'flex',
@@ -95,11 +95,11 @@ export default function Clinic() {
                 lineHeight: 1.15,
               }}
             >
-              Un espacio para el sujeto que sufre
+              Un espacio de escucha de uno a uno.
             </Typography>
             <Typography
               sx={{
-                fontSize: '0.85rem',
+                fontSize: '1.01rem',
                 color: 'text.secondary',
                 maxWidth: 360,
                 lineHeight: 1.75,
