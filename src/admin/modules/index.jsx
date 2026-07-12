@@ -13,6 +13,9 @@ function makeModulo({ titulo, descripcion, columnas }) {
 }
 
 export { default as Noticias } from './Noticias';
+export { default as Seminarios } from './Seminarios';
+export { default as Usuarios } from './Usuarios';
+export { default as Biblioteca } from './Biblioteca';
 
 export const Eventos = makeModulo({
   titulo: 'Eventos',
@@ -36,19 +39,6 @@ export const Programas = makeModulo({
     { key: 'modalidad', label: 'Modalidad' },
     { key: 'precio',    label: 'Precio' },
     { key: 'activo',    label: 'Activo', render: v => v ? '✓' : '—' },
-  ],
-});
-
-export const Seminarios = makeModulo({
-  titulo: 'Seminarios',
-  descripcion: 'Seminarios permanentes y temporales del Colegio.',
-  columnas: [
-    { key: 'titulo',       label: 'Título' },
-    { key: 'horario',      label: 'Horario' },
-    { key: 'fecha_inicio', label: 'Inicio' },
-    { key: 'modalidad',    label: 'Modalidad' },
-    { key: 'cupo_maximo',  label: 'Cupo' },
-    { key: 'activo',       label: 'Activo', render: v => v ? '✓' : '—' },
   ],
 });
 
@@ -84,18 +74,6 @@ export const Publicaciones = makeModulo({
     { key: 'titulo',           label: 'Título' },
     { key: 'fecha_publicacion', label: 'Fecha' },
     { key: 'publicado',        label: 'Estado', render: v => v ? 'Publicado' : 'Borrador' },
-  ],
-});
-
-export const Biblioteca = makeModulo({
-  titulo: 'Biblioteca y Archivo',
-  descripcion: 'Libros, documentos y materiales de consulta.',
-  columnas: [
-    { key: 'tipo',       label: 'Tipo' },
-    { key: 'titulo',     label: 'Título' },
-    { key: 'autor',      label: 'Autor' },
-    { key: 'anio',       label: 'Año' },
-    { key: 'disponible', label: 'Disponible', render: v => v ? '✓' : '—' },
   ],
 });
 
@@ -143,14 +121,3 @@ export const Investigacion = makeModulo({
   ],
 });
 
-export const Usuarios = makeModulo({
-  titulo: 'Usuarios del Panel',
-  descripcion: 'Cuentas con acceso al panel de administración.',
-  columnas: [
-    { key: 'nombre',        label: 'Nombre' },
-    { key: 'email',         label: 'Correo' },
-    { key: 'rol',           label: 'Rol' },
-    { key: 'ultimo_acceso', label: 'Último acceso' },
-    { key: 'activo',        label: 'Activo', render: v => v ? '✓' : '—' },
-  ],
-});

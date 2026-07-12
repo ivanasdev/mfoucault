@@ -34,7 +34,7 @@ export default function Manifesto() {
         >
           {/* Left: pull quote */}
           <Box sx={{ position: { lg: 'sticky' }, top: { lg: 120 } }}>
-            <SectionLabel>01 — Manifiesto</SectionLabel>
+            <SectionLabel>  Manifiesto</SectionLabel>
 
             <Box
               sx={{

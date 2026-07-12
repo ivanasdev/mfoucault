@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Container, Typography, Tabs, Tab, Button, IconButton } from '@mui/material';
+import { Box, Container, Typography, Tabs, Tab, Button, IconButton, Dialog } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import HeadphonesOutlinedIcon from '@mui/icons-material/HeadphonesOutlined';
@@ -7,9 +7,11 @@ import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined';
 import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CloseIcon from '@mui/icons-material/Close';
 import SectionLabel from '../ui/SectionLabel';
 import { useInView } from '../../hooks/useInView';
-
+import video1 from '../../assets/video/vid01.mp4';
+import video2 from '../../assets/video/vid02.mp4';
 const tabs = ['Podcast', 'Conferencias', 'Videos'];
 
 const podcast = [
@@ -88,28 +90,32 @@ const conferences = [
 
 const videos = [
   {
-    title: 'Seminario de apertura 2026: El presente como problema',
+    title: 'Seminario de apertura 2026',
     type: 'Seminario',
     duration: '2h 15min',
     date: 'Feb 2026',
+    src: video1,
   },
   {
-    title: 'Mesa redonda: Psicoanálisis, feminismo y lazo social',
+    title: 'Mesa redonda',
     type: 'Jornada',
     duration: '3h 40min',
     date: 'Nov 2025',
+    src: video2,
   },
   {
-    title: 'Clase magistral: Introducción al psicoanálisis lacaniano',
+    title: 'Clase magistral',
     type: 'Docencia',
     duration: '1h 45min',
     date: 'Mar 2026',
+    src: video1,
   },
   {
-    title: 'Conversatorio: ¿Qué es pensar críticamente?',
+    title: 'Conversatorio',
     type: 'Conversatorio',
     duration: '1h 28min',
     date: 'Abr 2026',
+    src: video2,
   },
 ];
 
@@ -119,6 +125,7 @@ export default function Multimedia() {
   const [ref, inView] = useInView(0.06);
   const [tab, setTab] = useState(0);
   const currentTab = tabs[tab];
+  const [activeVideo, setActiveVideo] = useState(null);
 
   return (
     <Box
@@ -134,7 +141,7 @@ export default function Multimedia() {
       }}
     >
       <Container maxWidth="xl" sx={{ px: { xs: 3, md: 8 } }}>
-        <SectionLabel>08 — Podcast y Multimedia</SectionLabel>
+        <SectionLabel> Podcast y Multimedia</SectionLabel>
         <Box
           sx={{
             display: 'flex',
@@ -229,7 +236,7 @@ export default function Multimedia() {
         >
           <Tab label="Podcast" icon={<MicNoneOutlinedIcon sx={{ fontSize: 15 }} />} iconPosition="start" disableRipple />
           <Tab label="Conferencias" icon={<HeadphonesOutlinedIcon sx={{ fontSize: 15 }} />} iconPosition="start" disableRipple />
-          <Tab label="Videos" icon={<VideocamOutlinedIcon sx={{ fontSize: 15 }} />} iconPosition="start" disableRipple />
+          <Tab label="Videos" icon={<VideocamOutlinedIcon sx={{ fontSize: 15, bgcolor: 'secondary.main', }} />} iconPosition="start" disableRipple />
         </Tabs>
 
         {/* Podcast episodes */}
@@ -372,6 +379,7 @@ export default function Multimedia() {
                 key={video.title}
                 tabIndex={0}
                 role="article"
+                onClick={() => setActiveVideo(video)}
                 sx={{
                   borderRight: i % 2 === 0 ? `1px solid ${theme.palette.divider}` : 'none',
                   borderBottom: i < 2 ? `1px solid ${theme.palette.divider}` : 'none',
@@ -381,49 +389,61 @@ export default function Multimedia() {
                 }}
               >
                 {/* Video thumbnail placeholder */}
-                <Box
-                  sx={{
-                    height: 180,
-                    bgcolor: isDark ? '#111' : '#e8e2d8',
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                    backgroundImage: isDark
-                      ? `radial-gradient(ellipse at center, rgba(155,37,37,0.08) 0%, transparent 70%), repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 20px)`
-                      : `radial-gradient(ellipse at center, rgba(139,26,26,0.06) 0%, transparent 70%), repeating-linear-gradient(45deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 20px)`,
-                  }}
-                >
-                  <Box
-                    className="video-overlay"
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-                      bgcolor: 'rgba(0,0,0,0.35)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: 0,
-                      transition: 'opacity 0.25s',
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: '50%',
-                        bgcolor: 'rgba(155,37,37,0.9)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <PlayArrowIcon sx={{ fontSize: 24, color: '#fff', ml: 0.4 }} />
-                    </Box>
-                  </Box>
-                  <VideocamOutlinedIcon sx={{ fontSize: 32, color: isDark ? 'rgba(221,200,170,0.1)' : 'rgba(26,21,16,0.08)' }} />
-                </Box>
+<Box
+  sx={{
+    height: 220,
+    position: 'relative',
+    overflow: 'hidden',
+    bgcolor: '#040404',
+  }}
+>
+<video
+    src={video.src}
+    autoPlay
+    muted
+    loop
+    playsInline
+    style={{
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      display: 'block',
+    }}
+/>
+  <Box
+    className="video-overlay"
+    sx={{
+      position: 'absolute',
+      inset: 0,
+      bgcolor: 'rgba(161, 0, 0, 0.17)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      opacity: 0,
+      transition: 'opacity .3s',
+    }}
+  >
+    <Box
+      sx={{
+        width: 56,
+        height: 56,
+        borderRadius: '50%',
+        bgcolor: 'rgba(155,37,37,.9)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <PlayArrowIcon
+        sx={{
+          color: '#fff',
+          fontSize: 28,
+          ml: 0.4,
+        }}
+      />
+    </Box>
+  </Box>
+</Box>
                 <Box sx={{ p: { xs: 2.5, md: 3 } }}>
                   <Box sx={{ display: 'flex', gap: 2, mb: 1, alignItems: 'center' }}>
                     <Typography sx={{ fontSize: '0.62rem', letterSpacing: '0.1em', color: 'secondary.main', opacity: 0.7, fontFamily: '"Inter", sans-serif', textTransform: 'uppercase' }}>
@@ -451,6 +471,49 @@ export default function Multimedia() {
             Ver todo el archivo audiovisual
           </Button>
         </Box>
+
+        <Dialog
+          open={!!activeVideo}
+          onClose={() => setActiveVideo(null)}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: {
+              bgcolor: '#000',
+              borderRadius: 0,
+              overflow: 'hidden',
+            },
+          }}
+        >
+          <IconButton
+            onClick={() => setActiveVideo(null)}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              color: '#fff',
+              zIndex: 1,
+              bgcolor: 'rgba(0,0,0,0.4)',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          {activeVideo && (
+            <video
+              key={activeVideo.title}
+              src={activeVideo.src}
+              controls
+              autoPlay
+              style={{
+                width: '100%',
+                maxHeight: '80vh',
+                display: 'block',
+                backgroundColor: '#000',
+              }}
+            />
+          )}
+        </Dialog>
       </Container>
     </Box>
   );

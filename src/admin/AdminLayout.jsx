@@ -35,7 +35,7 @@ export default function AdminLayout({ children }) {
   return (
     <div style={s.root}>
       {/* ── Sidebar ── */}
-      <aside style={{ ...s.sidebar, left: open ? 0 : `-${SIDEBAR_W}px` }}>
+      <aside className={`cmf-sidebar${open ? ' cmf-sidebar-open' : ''}`} style={s.sidebar}>
         <div style={s.sideTop}>
           <span style={s.siteName}>CMF</span>
           <span style={s.siteTag}>Administración</span>
@@ -70,10 +70,10 @@ export default function AdminLayout({ children }) {
       )}
 
       {/* ── Main ── */}
-      <div style={{ ...s.main, marginLeft: SIDEBAR_W }}>
+      <div className="cmf-main" style={s.main}>
         {/* Top bar */}
         <header style={s.topbar}>
-          <button style={s.menuBtn} onClick={() => setOpen(o => !o)}>
+          <button className="cmf-menu-btn" style={s.menuBtn} onClick={() => setOpen(o => !o)}>
             ☰
           </button>
           <span style={s.topbarUser}>
@@ -108,7 +108,6 @@ const s = {
     zIndex: 100,
     transition: 'left 0.25s ease',
     overflowY: 'auto',
-    '@media(min-width:768px)': { left: '0 !important' },
   },
   sideTop: {
     padding: '24px 20px 18px',
@@ -151,7 +150,7 @@ const s = {
   navActive: {
     color: '#ddd3bf',
     background: 'rgba(155,37,37,0.12)',
-    borderLeftColor: '#9b2525',
+    borderLeft: '2px solid #9b2525',
   },
   navIcon: {
     fontSize: '0.85rem',
@@ -201,7 +200,6 @@ const s = {
     fontSize: '1.2rem',
     cursor: 'pointer',
     color: '#555',
-    display: 'none',
   },
   topbarUser: {
     fontSize: '0.8rem',

@@ -1,40 +1,90 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 
-const STATS = [
-  { label: 'Noticias',       value: '0', path: '/admin/noticias',      color: '#9b2525' },
-  { label: 'Programas',      value: '0', path: '/admin/programas',     color: '#1a3a4a' },
-  { label: 'Docentes',       value: '0', path: '/admin/docentes',      color: '#2a3a20' },
-  { label: 'Publicaciones',  value: '0', path: '/admin/publicaciones', color: '#3a2a4a' },
-  { label: 'Multimedia',     value: '0', path: '/admin/multimedia',    color: '#4a2a1a' },
-  { label: 'Consultas clínica', value: '0', path: '/admin/clinica',   color: '#1a4a3a' },
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:9696';
+
+// Módulos con conteo real disponible en el backend hoy.
+const STATS_CONECTADAS = [
+  { key: 'usuarios',   label: 'Usuarios',   path: '/admin/usuarios',   color: '#9b2525', endpoint: '/api/auth/usuarios' },
+  { key: 'seminarios', label: 'Seminarios', path: '/admin/seminarios', color: '#1a3a4a', endpoint: '/api/seminarios' },
+];
+
+// Resto de módulos: aún sin endpoint de listado en el backend.
+const STATS_PENDIENTES = [
+  { label: 'Noticias',          path: '/admin/noticias',      color: '#2a3a20' },
+  { label: 'Programas',         path: '/admin/programas',     color: '#3a2a4a' },
+  { label: 'Docentes',          path: '/admin/docentes',      color: '#4a2a1a' },
+  { label: 'Publicaciones',     path: '/admin/publicaciones', color: '#1a4a3a' },
+  { label: 'Consultas clínica', path: '/admin/clinica',       color: '#4a1a3a' },
 ];
 
 const ACCESOS = [
+  { label: 'Nuevo usuario',       path: '/admin/usuarios' },
+  { label: 'Nuevo seminario',     path: '/admin/seminarios' },
   { label: 'Nueva noticia',       path: '/admin/noticias' },
   { label: 'Nuevo programa',      path: '/admin/programas' },
   { label: 'Nuevo docente',       path: '/admin/docentes' },
   { label: 'Nueva publicación',   path: '/admin/publicaciones' },
-  { label: 'Subir multimedia',    path: '/admin/multimedia' },
   { label: 'Ver inscripciones',   path: '/admin/inscripciones' },
 ];
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user, authHeaders } = useAuth();
+  const [conteos, setConteos] = useState({});
+
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      const resultados = await Promise.all(
+        STATS_CONECTADAS.map(async st => {
+          try {
+            const res = await fetch(`${API}${st.endpoint}`, { headers: authHeaders() });
+            const data = await res.json();
+            return [st.key, res.ok ? (data.data?.length ?? 0) : null];
+          } catch {
+            return [st.key, null];
+          }
+        })
+      );
+      if (!ignore) setConteos(Object.fromEntries(resultados));
+    })();
+    return () => { ignore = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div>
       <h1 style={s.title}>Panel de administración</h1>
-      <p style={s.sub}>Colegio Michel Foucault · Gestión de contenidos</p>
+      <p style={s.sub}>
+        Colegio Michel Foucault · Gestión de contenidos
+        {user?.nombre && <> · <span style={s.userTag}>{user.nombre}</span></>}
+      </p>
 
       {/* Stats */}
       <div style={s.grid}>
-        {STATS.map(st => (
+        {STATS_CONECTADAS.map(st => (
           <div
-            key={st.label}
+            key={st.key}
+            className="cmf-card"
             style={{ ...s.card, borderTopColor: st.color }}
             onClick={() => navigate(st.path)}
           >
-            <span style={s.cardValue}>{st.value}</span>
+            <span style={s.cardValue}>
+              {conteos[st.key] == null ? '—' : conteos[st.key]}
+            </span>
+            <span style={s.cardLabel}>{st.label}</span>
+          </div>
+        ))}
+        {STATS_PENDIENTES.map(st => (
+          <div
+            key={st.label}
+            className="cmf-card"
+            style={{ ...s.card, borderTopColor: st.color }}
+            onClick={() => navigate(st.path)}
+          >
+            <span style={s.cardValue}>—</span>
             <span style={s.cardLabel}>{st.label}</span>
           </div>
         ))}
@@ -46,6 +96,7 @@ export default function Dashboard() {
         {ACCESOS.map(a => (
           <button
             key={a.label}
+            className="cmf-btn-ghost"
             style={s.accesoBtn}
             onClick={() => navigate(a.path)}
           >
@@ -71,6 +122,9 @@ const s = {
     marginBottom: '28px',
     letterSpacing: '0.05em',
   },
+  userTag: {
+    color: '#9b2525',
+  },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
@@ -79,13 +133,14 @@ const s = {
   },
   card: {
     background: '#fff',
+    borderRadius: '2px',
     borderTop: '3px solid #9b2525',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
     padding: '20px',
     cursor: 'pointer',
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
-    transition: 'box-shadow 0.2s',
   },
   cardValue: {
     fontSize: '2rem',
@@ -115,12 +170,12 @@ const s = {
   },
   accesoBtn: {
     background: '#fff',
+    borderRadius: '2px',
     border: '1px solid #e0e0e0',
     padding: '9px 16px',
     fontSize: '0.78rem',
     color: '#444',
     cursor: 'pointer',
     letterSpacing: '0.03em',
-    transition: 'border-color 0.2s, color 0.2s',
   },
 };

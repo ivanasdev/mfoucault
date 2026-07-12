@@ -1,0 +1,91 @@
+/* Estados interactivos compartidos del panel de administración.
+   Los estilos base viven inline junto a cada componente; aquí solo
+   viven los pseudo-estados (:hover, :focus) que React inline styles
+   no puede expresar. */
+
+.cmf-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cmf-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.09);
+}
+
+.cmf-input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cmf-input:focus {
+  border-color: #9b2525 !important;
+  box-shadow: 0 0 0 3px rgba(155, 37, 37, 0.12);
+}
+
+.cmf-btn-primary {
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.cmf-btn-primary:hover:not(:disabled) {
+  background: #7d1e1e !important;
+}
+.cmf-btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.cmf-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.cmf-btn-secondary {
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.cmf-btn-secondary:hover:not(:disabled) {
+  border-color: #9b2525 !important;
+  color: #9b2525 !important;
+}
+
+.cmf-btn-ghost {
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.cmf-btn-ghost:hover {
+  border-color: #9b2525 !important;
+  color: #9b2525 !important;
+  background: rgba(155, 37, 37, 0.04) !important;
+}
+
+.cmf-row:hover {
+  background: rgba(155, 37, 37, 0.045) !important;
+}
+
+.cmf-edit-btn:hover {
+  border-color: #999 !important;
+  color: #333 !important;
+}
+.cmf-del-btn:hover {
+  background: rgba(155, 37, 37, 0.07) !important;
+}
+
+/* Sidebar del panel: oculto/deslizable en móvil, siempre visible en escritorio.
+   React inline styles no soportan @media, por eso vive aquí. */
+.cmf-sidebar {
+  left: -230px;
+}
+.cmf-sidebar.cmf-sidebar-open {
+  left: 0;
+}
+.cmf-menu-btn {
+  display: none;
+}
+.cmf-main {
+  margin-left: 0;
+}
+@media (min-width: 768px) {
+  .cmf-sidebar {
+    left: 0 !important;
+  }
+  .cmf-main {
+    margin-left: 230px;
+  }
+}
+@media (max-width: 767px) {
+  .cmf-menu-btn {
+    display: inline-flex !important;
+  }
+}

@@ -35,7 +35,7 @@ export const ColorModeContext = createContext({ toggleColorMode: () => {}, mode:
 
 // ── Sitio público ──────────────────────────────────────────────────────────────
 function PublicSite() {
-  const [mode, setMode] = useState('dark');
+  const [mode, setMode] = useState('ligth');
   const [showIntro, setShowIntro] = useState(true);
 
   const colorMode = useMemo(() => ({
@@ -54,14 +54,20 @@ function PublicSite() {
         <main>
           <Hero />
           <Manifesto />
-          <AcademicOffer />
           <Seminars />
           <Library />
+          <Multimedia />
+          
+           
+          {/*<AcademicOffer />
+         
+          
           <Publications />
           <ResearchLines />
           <Community />
           <Clinic />
-          <Multimedia />
+          */}
+       
         </main>
         <Footer />
       </ThemeProvider>

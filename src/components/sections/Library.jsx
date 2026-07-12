@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box, Container, Typography, TextField, InputAdornment,
-  Chip, Button,
+  Chip, Button, Dialog, IconButton,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
@@ -10,102 +10,22 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined';
 import HeadphonesOutlinedIcon from '@mui/icons-material/HeadphonesOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SectionLabel from '../ui/SectionLabel';
 import { useInView } from '../../hooks/useInView';
 
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:9696';
+
 const disciplines = ['Todo', 'Psicoanálisis', 'Teoría Crítica', 'Criminología', 'Filosofía', 'Clínica'];
-const materialTypes = ['Artículos', 'Ensayos', 'Conferencias', 'Audiovisual'];
 
-const materials = [
-  {
-    type: 'Ensayo',
-    icon: 'article',
-    title: 'El inconsciente como discurso del Otro: una lectura de Lacan',
-    author: 'Elena Vásquez Reyes',
-    year: '2024',
-    discipline: 'Psicoanálisis',
-    pages: '24 pp.',
-  },
-  {
-    type: 'Conferencia',
-    icon: 'audio',
-    title: 'Biopolítica y gubernamentalidad: Foucault en el siglo XXI',
-    author: 'Rodrigo Montemayor',
-    year: '2024',
-    discipline: 'Teoría Crítica',
-    pages: '68 min.',
-  },
-  {
-    type: 'Artículo',
-    icon: 'article',
-    title: 'La criminología crítica latinoamericana: balance y perspectivas',
-    author: 'Andrés Vallecillo',
-    year: '2023',
-    discipline: 'Criminología',
-    pages: '18 pp.',
-  },
-  {
-    type: 'Ensayo',
-    icon: 'article',
-    title: 'Goce y lazo social: clínica de la época',
-    author: 'Sofía Cienfuegos',
-    year: '2024',
-    discipline: 'Psicoanálisis',
-    pages: '31 pp.',
-  },
-  {
-    type: 'Video',
-    icon: 'video',
-    title: 'Jornada: Psicoanálisis y feminismo. Mesa redonda completa',
-    author: 'Varios autores',
-    year: '2023',
-    discipline: 'Clínica',
-    pages: '2 h 15 min.',
-  },
-  {
-    type: 'Artículo',
-    icon: 'article',
-    title: 'Dialéctica de la Ilustración: notas para una relectura crítica',
-    author: 'Luis Ibáñez Torres',
-    year: '2024',
-    discipline: 'Filosofía',
-    pages: '14 pp.',
-  },
-  {
-    type: 'Libro',
-    icon: 'book',
-    title: 'Subjetividad, poder y resistencia: ensayos desde el Sur',
-    author: 'AA. VV.',
-    year: '2024',
-    discipline: 'Teoría Crítica',
-    pages: '312 pp.',
-  },
-  {
-    type: 'Conferencia',
-    icon: 'audio',
-    title: 'La psicosis ordinaria: introducción a la clínica de lo no-todo',
-    author: 'Sofía Cienfuegos',
-    year: '2023',
-    discipline: 'Clínica',
-    pages: '52 min.',
-  },
-  {
-    type: 'Artículo',
-    icon: 'article',
-    title: 'El nombre del padre y sus suplencias en la clínica contemporánea',
-    author: 'Elena Vásquez Reyes',
-    year: '2022',
-    discipline: 'Psicoanálisis',
-    pages: '22 pp.',
-  },
-];
-
-const stats = [
-  { num: '1,200+', label: 'Textos' },
-  { num: '340+', label: 'Conferencias' },
-  { num: '85+', label: 'Videos' },
-  { num: '28', label: 'Disciplinas' },
-];
+const iconoPorTipo = {
+  Ensayo: 'article',
+  Artículo: 'article',
+  Conferencia: 'audio',
+  Video: 'video',
+  Libro: 'book',
+};
 
 const typeIcons = {
   article: <ArticleOutlinedIcon sx={{ fontSize: 15 }} />,
@@ -114,12 +34,56 @@ const typeIcons = {
   book: <MenuBookOutlinedIcon sx={{ fontSize: 15 }} />,
 };
 
+function tipoArchivo(url) {
+  if (!url) return null;
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) return 'imagen';
+  if (['mp4', 'webm', 'mov'].includes(ext)) return 'video';
+  if (ext === 'pdf') return 'pdf';
+  return 'externo';
+}
+
+function mapMaterial(m) {
+  return {
+    id: m.id,
+    type: m.tipo,
+    icon: iconoPorTipo[m.tipo] || 'article',
+    title: m.titulo,
+    author: m.autor,
+    year: String(m.anio ?? ''),
+    discipline: m.disciplina,
+    pages: m.extension,
+    url: m.url,
+  };
+}
+
 export default function Library() {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const [ref, inView] = useInView(0.06);
   const [activeDisc, setActiveDisc] = useState('Todo');
   const [query, setQuery] = useState('');
+  const [materials, setMaterials] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [materialAbierto, setMaterialAbierto] = useState(null);
+
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/biblioteca/publicos`);
+        const data = await res.json();
+        if (!ignore && res.ok) {
+          setMaterials((data.data ?? []).map(mapMaterial));
+        }
+      } catch {
+        // Se deja la lista vacía si falla la conexión
+      } finally {
+        if (!ignore) setCargando(false);
+      }
+    })();
+    return () => { ignore = true; };
+  }, []);
 
   const filtered = materials.filter((m) => {
     const matchDisc = activeDisc === 'Todo' || m.discipline === activeDisc;
@@ -127,6 +91,13 @@ export default function Library() {
       || m.author.toLowerCase().includes(query.toLowerCase());
     return matchDisc && matchQuery;
   });
+
+  const stats = [
+    { num: String(materials.length), label: 'Materiales' },
+    { num: String(materials.filter(m => m.type === 'Conferencia').length), label: 'Conferencias' },
+    { num: String(materials.filter(m => m.type === 'Video').length), label: 'Videos' },
+    { num: String(new Set(materials.map(m => m.discipline)).size), label: 'Disciplinas' },
+  ];
 
   return (
     <Box
@@ -254,17 +225,35 @@ export default function Library() {
         </Box>
 
         {/* Results */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' },
-            border: `1px solid ${theme.palette.divider}`,
-          }}
-        >
-          {filtered.map((item, i) => (
-            <MaterialCard key={item.title} item={item} index={i} isDark={isDark} theme={theme} total={filtered.length} />
-          ))}
-        </Box>
+        {cargando ? (
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', py: 6, textAlign: 'center' }}>
+            Cargando archivo...
+          </Typography>
+        ) : filtered.length === 0 ? (
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', py: 6, textAlign: 'center' }}>
+            No hay materiales que coincidan con tu búsqueda.
+          </Typography>
+        ) : (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' },
+              border: `1px solid ${theme.palette.divider}`,
+            }}
+          >
+            {filtered.map((item, i) => (
+              <MaterialCard
+                key={item.id ?? item.title}
+                item={item}
+                index={i}
+                isDark={isDark}
+                theme={theme}
+                total={filtered.length}
+                onAbrir={setMaterialAbierto}
+              />
+            ))}
+          </Box>
+        )}
 
         <Box sx={{ mt: 5, display: 'flex', justifyContent: 'center' }}>
           <Button
@@ -280,11 +269,17 @@ export default function Library() {
           </Button>
         </Box>
       </Container>
+
+      <MaterialViewerModal
+        item={materialAbierto}
+        onClose={() => setMaterialAbierto(null)}
+        theme={theme}
+      />
     </Box>
   );
 }
 
-function MaterialCard({ item, index, isDark, theme, total }) {
+function MaterialCard({ item, index, isDark, theme, total, onAbrir }) {
   const cols = 3;
   const isLastRow = index >= total - (total % cols || cols);
   const isLastCol = (index + 1) % cols === 0;
@@ -293,11 +288,12 @@ function MaterialCard({ item, index, isDark, theme, total }) {
     <Box
       role="article"
       tabIndex={0}
+      onClick={() => item.url && onAbrir(item)}
       sx={{
         p: { xs: 3, md: 3.5 },
         borderRight: !isLastCol ? `1px solid ${theme.palette.divider}` : 'none',
         borderBottom: !isLastRow ? `1px solid ${theme.palette.divider}` : 'none',
-        cursor: 'pointer',
+        cursor: item.url ? 'pointer' : 'default',
         transition: 'background-color 0.25s',
         '&:hover': {
           bgcolor: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.02)',
@@ -372,16 +368,211 @@ function MaterialCard({ item, index, isDark, theme, total }) {
         />
       </Box>
 
-      <Typography
-        sx={{
-          fontSize: '0.68rem',
-          color: isDark ? 'rgba(155,37,37,0.5)' : 'rgba(139,26,26,0.5)',
-          fontFamily: '"Inter", sans-serif',
-          mt: 1,
-        }}
-      >
-        {item.pages}
-      </Typography>
+      {item.pages && (
+        <Typography
+          sx={{
+            fontSize: '0.68rem',
+            color: isDark ? 'rgba(155,37,37,0.5)' : 'rgba(139,26,26,0.5)',
+            fontFamily: '"Inter", sans-serif',
+            mt: 1,
+          }}
+        >
+          {item.pages}
+        </Typography>
+      )}
     </Box>
+  );
+}
+
+function MaterialViewerModal({ item, onClose, theme }) {
+  const kind = item ? tipoArchivo(item.url) : null;
+
+  return (
+    <Dialog
+      open={Boolean(item)}
+      onClose={onClose}
+      fullWidth
+      maxWidth={kind === 'externo' ? 'xs' : 'lg'}
+      PaperProps={{
+        sx: {
+          bgcolor: 'background.default',
+          borderRadius: 0,
+          border: `1px solid ${theme.palette.divider}`,
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {item && (
+        <>
+          {/* Header */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: 2,
+              px: { xs: 3, md: 4 },
+              pt: 3,
+              pb: 2,
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                sx={{
+                  fontSize: '0.68rem',
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  color: 'secondary.main',
+                  mb: 0.5,
+                }}
+              >
+                {item.type}
+              </Typography>
+              <Typography
+                sx={{
+                  fontFamily: '"Playfair Display", serif',
+                  fontSize: { xs: '1.1rem', md: '1.35rem' },
+                  color: 'text.primary',
+                  lineHeight: 1.25,
+                }}
+              >
+                {item.title}
+              </Typography>
+            </Box>
+            <IconButton
+              onClick={onClose}
+              sx={{
+                color: 'text.secondary',
+                flexShrink: 0,
+                '&:hover': { color: 'secondary.main', bgcolor: 'transparent' },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          {/* Media */}
+          {kind === 'imagen' && (
+            <Box
+              sx={{
+                bgcolor: '#0a0a0a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: { xs: 260, md: 420 },
+                maxHeight: '70vh',
+              }}
+            >
+              <Box
+                component="img"
+                src={item.url}
+                alt={item.title}
+                sx={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', display: 'block' }}
+              />
+            </Box>
+          )}
+
+          {kind === 'video' && (
+            <Box sx={{ bgcolor: '#000' }}>
+              <Box
+                component="video"
+                src={item.url}
+                controls
+                autoPlay
+                sx={{ width: '100%', maxHeight: '70vh', display: 'block' }}
+              />
+            </Box>
+          )}
+
+          {kind === 'pdf' && (
+            <Box sx={{ bgcolor: '#1a1a1a', height: { xs: '50vh', md: '70vh' } }}>
+              <Box
+                component="iframe"
+                src={item.url}
+                title={item.title}
+                sx={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+              />
+            </Box>
+          )}
+
+          {kind === 'externo' && (
+            <Box sx={{ px: { xs: 3, md: 4 }, py: 6, textAlign: 'center' }}>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', mb: 3, lineHeight: 1.8 }}>
+                Este material se aloja en un sitio externo.
+              </Typography>
+              <Button
+                variant="outlined"
+                endIcon={<OpenInNewIcon sx={{ fontSize: '15px !important' }} />}
+                onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
+                sx={{
+                  color: 'secondary.main',
+                  borderColor: 'secondary.main',
+                  px: 4,
+                  py: 1.2,
+                  fontSize: '0.78rem',
+                  letterSpacing: '0.08em',
+                  '&:hover': { bgcolor: 'secondary.main', color: '#fff' },
+                }}
+              >
+                Abrir enlace
+              </Button>
+            </Box>
+          )}
+
+          {/* Ficha técnica */}
+          <Box
+            sx={{
+              px: { xs: 3, md: 4 },
+              py: 2.2,
+              borderTop: `1px solid ${theme.palette.divider}`,
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: { xs: 1.2, md: 2 },
+            }}
+          >
+            <Typography sx={{ fontSize: '0.82rem', color: 'text.primary', fontStyle: 'italic' }}>
+              {item.author}
+            </Typography>
+            <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'text.secondary', opacity: 0.5 }} />
+            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary' }}>{item.year}</Typography>
+            {item.pages && (
+              <>
+                <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'text.secondary', opacity: 0.5 }} />
+                <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary' }}>{item.pages}</Typography>
+              </>
+            )}
+            <Chip
+              label={item.discipline}
+              size="small"
+              sx={{
+                ml: 'auto',
+                fontSize: '0.6rem',
+                letterSpacing: '0.06em',
+                bgcolor: 'transparent',
+                border: `1px solid ${theme.palette.divider}`,
+                color: 'text.secondary',
+                borderRadius: 1,
+              }}
+            />
+            {kind !== 'externo' && (
+              <Button
+                size="small"
+                endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
+                sx={{
+                  color: 'text.secondary',
+                  fontSize: '0.7rem',
+                  letterSpacing: '0.06em',
+                  '&:hover': { color: 'secondary.main', bgcolor: 'transparent' },
+                }}
+              >
+                Abrir en pestaña nueva
+              </Button>
+            )}
+          </Box>
+        </>
+      )}
+    </Dialog>
   );
 }

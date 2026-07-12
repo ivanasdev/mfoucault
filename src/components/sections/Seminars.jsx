@@ -1,78 +1,17 @@
-import { Box, Container, Typography, Chip, Button } from '@mui/material';
+import { Box, Container, Typography, Chip, Button, Tabs, Tab, Collapse } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
+import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import SectionLabel from '../ui/SectionLabel';
 import { useInView } from '../../hooks/useInView';
+import { useState, useEffect } from 'react';
+import RegistroPagoModal from '../../admin/NewPay';
 
-const events = [
-  {
-    day: '15',
-    month: 'Jul',
-    year: '2026',
-    type: 'Seminario',
-    title: 'El sujeto en la clínica: entre el síntoma y el goce',
-    description: 'Discusión en torno a la articulación lacaniana entre síntoma, goce y sujeto. Lectura de los Seminarios XX y XXIII de Lacan.',
-    speaker: 'Dra. Elena Vásquez Reyes',
-    place: 'Aula Magna — Sede Central',
-    accent: '#9b2525',
-  },
-  {
-    day: '22',
-    month: 'Jul',
-    year: '2026',
-    type: 'Coloquio',
-    title: 'Genealogía del poder disciplinario: relecturas de Vigilar y castigar',
-    description: 'Coloquio sobre la actualidad del análisis foucaultiano de las instituciones disciplinarias y sus transformaciones contemporáneas.',
-    speaker: 'Dr. Rodrigo Montemayor & invitados',
-    place: 'Sala de Seminarios — Sede Central',
-    accent: '#1a3a4a',
-  },
-  {
-    day: '05',
-    month: 'Ago',
-    year: '2026',
-    type: 'Jornada',
-    title: 'Violencia, Estado y subjetividad en América Latina',
-    description: 'Jornada académica de un día completo que reúne investigadores de criminología crítica, psicología social y teoría política para pensar las violencias estatales en el contexto latinoamericano.',
-    speaker: 'Mesa redonda: investigadores invitados',
-    place: 'Auditorio — Campus Norte',
-    accent: '#2a3a20',
-  },
-  {
-    day: '12',
-    month: 'Ago',
-    year: '2026',
-    type: 'Conferencia',
-    title: 'Lacan y el lenguaje: estructura, equívoco y falla',
-    description: 'Conferencia inaugural del ciclo anual "Fundamentos del psicoanálisis lacaniano", dirigida a estudiantes de nuevo ingreso y público general.',
-    speaker: 'Mtra. Sofía Cienfuegos',
-    place: 'Aula Magna — Sede Central',
-    accent: '#9b2525',
-  },
-  {
-    day: '19',
-    month: 'Ago',
-    year: '2026',
-    type: 'Seminario',
-    title: 'Crítica de la razón punitiva: hacia un abolicionismo penal',
-    description: 'Seminario intensivo sobre las bases teóricas del abolicionismo penal, con lectura de Christie, Hulsman y sus recepciones latinoamericanas.',
-    speaker: 'Dr. Andrés Vallecillo',
-    place: 'Sala de Seminarios — Sede Central',
-    accent: '#3a2a4a',
-  },
-  {
-    day: '03',
-    month: 'Sep',
-    year: '2026',
-    type: 'Coloquio',
-    title: 'Psicoanálisis y política: el malestar en la cultura hoy',
-    description: 'Coloquio de fin de semana sobre las dimensiones políticas del psicoanálisis freudiano y lacaniano: subjetivación, deseo y resistencia.',
-    speaker: 'Dr. Luis Ibáñez Torres & Dra. Carmen Delgado',
-    place: 'Campus Norte — Auditorio B',
-    accent: '#4a3a1a',
-  },
-];
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:9696';
 
 const typeColors = {
   Seminario: '#9b2525',
@@ -81,10 +20,75 @@ const typeColors = {
   Conferencia: '#3a2a4a',
 };
 
+function mapSeminario(sem) {
+  const inicio = sem.fecha_inicio ? new Date(sem.fecha_inicio) : null;
+  const fin = sem.fecha_fin ? new Date(sem.fecha_fin) : null;
+  const mes = inicio
+    ? inicio.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '')
+    : '';
+
+  return {
+    id: sem.id,
+    day: inicio ? String(inicio.getDate()).padStart(2, '0') : '—',
+    month: mes ? mes.charAt(0).toUpperCase() + mes.slice(1) : '',
+    year: inicio ? inicio.getFullYear() : '',
+    type: sem.tipo || 'Seminario',
+    title: sem.nombre,
+    description: sem.descripcion,
+    speaker: sem.ponente,
+    place: sem.lugar || sem.modalidad || 'Por confirmar',
+    imagen: sem.imagen || null,
+    fechaInicio: inicio,
+    fechaFin: fin,
+    modalidad: sem.modalidad,
+    lugar: sem.lugar,
+    cupo: sem.cupo,
+    costoSesion: sem.costo_sesion,
+    costoCurso: sem.costo_curso,
+  };
+}
+
+function formatearFecha(fecha) {
+  if (!fecha) return null;
+  return fecha.toLocaleDateString('es-MX', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 export default function Seminars() {
+
+  
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const [ref, inView] = useInView(0.08);
+  const [openPago, setOpenPago] = useState(false);
+  const [seminarioPreseleccionado, setSeminarioPreseleccionado] = useState(null);
+  const [tab, setTab] = useState('eventos');
+  const [expandedId, setExpandedId] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/seminarios/publicos`);
+        const data = await res.json();
+        if (!ignore && res.ok) {
+          setEvents((data.data ?? []).map(mapSeminario));
+        }
+      } catch {
+        // Se deja la lista vacía si falla la conexión
+      } finally {
+        if (!ignore) setCargando(false);
+      }
+    })();
+    return () => { ignore = true; };
+  }, []);
 
   return (
     <Box
@@ -112,7 +116,7 @@ export default function Seminars() {
           }}
         >
           <Box>
-            <SectionLabel>03 — Seminarios y Eventos</SectionLabel>
+            <SectionLabel>Seminarios y Eventos</SectionLabel>
             <Typography
               variant="h2"
               sx={{
@@ -123,7 +127,9 @@ export default function Seminars() {
             >
               Próximas actividades académicas
             </Typography>
+            
           </Box>
+      
 
           <Button
             endIcon={<CalendarTodayOutlinedIcon sx={{ fontSize: '14px !important' }} />}
@@ -138,57 +144,223 @@ export default function Seminars() {
           </Button>
         </Box>
 
-        {/* Events list */}
-        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          {events.map((event, i) => (
-            <EventRow key={event.title} event={event} index={i} isDark={isDark} theme={theme} />
-          ))}
-        </Box>
-
-        <Box sx={{ mt: 6, display: 'flex', justifyContent: 'center' }}>
-          <Button
-            variant="outlined"
-            endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
+        {/* Tabs */}
+        <Tabs
+          value={tab}
+          onChange={(e, v) => setTab(v)}
+          sx={{
+            mb: { xs: 5, md: 7 },
+            minHeight: 'auto',
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            '& .MuiTabs-indicator': { bgcolor: 'secondary.main', height: 2 },
+          }}
+        >
+          <Tab
+            value="eventos"
+            label="Próximos eventos"
+            disableRipple
             sx={{
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              fontSize: '0.72rem',
+              fontFamily: '"Inter", sans-serif',
               color: 'text.secondary',
-              borderColor: 'divider',
-              px: 5,
-              py: 1.4,
-              fontSize: '0.8rem',
-              letterSpacing: '0.08em',
-              '&:hover': {
-                color: 'text.primary',
-                borderColor: 'text.secondary',
-                bgcolor: 'action.hover',
-              },
+              minHeight: 'auto',
+              py: 2,
+              px: 0,
+              mr: 4,
+              '&.Mui-selected': { color: 'text.primary' },
             }}
-          >
-            Cargar más actividades
-          </Button>
-        </Box>
+          />
+          <Tab
+            value="arancel"
+            label="Arancel"
+            disableRipple
+            sx={{
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              fontSize: '0.72rem',
+              fontFamily: '"Inter", sans-serif',
+              color: 'text.secondary',
+              minHeight: 'auto',
+              py: 2,
+              px: 0,
+              '&.Mui-selected': { color: 'text.primary' },
+            }}
+          />
+        </Tabs>
+
+        {tab === 'eventos' && (
+          <>
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              {cargando ? (
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', py: 6, textAlign: 'center' }}>
+                  Cargando actividades...
+                </Typography>
+              ) : events.length === 0 ? (
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', py: 6, textAlign: 'center' }}>
+                  No hay seminarios próximos por el momento.
+                </Typography>
+              ) : (
+                events.map((event) => (
+                  <EventRow
+                    key={event.id ?? event.title}
+                    event={event}
+                    isDark={isDark}
+                    theme={theme}
+                    onPagar={(id) => { setSeminarioPreseleccionado(id); setOpenPago(true); }}
+                    expanded={expandedId === event.id}
+                    onToggle={() => setExpandedId(id => id === event.id ? null : event.id)}
+                  />
+                ))
+              )}
+            </Box>
+
+            {!cargando && events.length > 0 && (
+              <Box sx={{ mt: 6, display: 'flex', justifyContent: 'center' }}>
+                <Button
+                  variant="outlined"
+                  endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
+                  sx={{
+                    color: 'text.secondary',
+                    borderColor: 'divider',
+                    px: 5,
+                    py: 1.4,
+                    fontSize: '0.8rem',
+                    letterSpacing: '0.08em',
+                    '&:hover': {
+                      color: 'text.primary',
+                      borderColor: 'text.secondary',
+                      bgcolor: 'action.hover',
+                    },
+                  }}
+                >
+                  Cargar más actividades
+                </Button>
+              </Box>
+            )}
+          </>
+        )}
+
+        {tab === 'arancel' && (
+          <Box sx={{ maxWidth: 640, py: { xs: 2, md: 3 } }}>
+            <Typography
+              variant="h3"
+              sx={{
+                mb: 2,
+                fontSize: { xs: '1.4rem', md: '1.7rem' },
+                color: 'text.primary',
+              }}
+            >
+              Cobertura de arancel
+            </Typography>
+
+            <Typography
+              sx={{
+                color: 'text.secondary',
+                lineHeight: 1.85,
+                fontSize: '0.92rem',
+                mb: 3,
+              }}
+            >
+              Si ya elegiste un seminario, puedes cubrir su arancel directamente
+              desde su tarjeta en «Próximos eventos». Si prefieres hacerlo sin
+              elegir uno todavía, también puedes registrar tu pago desde aquí.
+            </Typography>
+
+            <Button
+              variant="text"
+              endIcon={<ArrowForwardIcon sx={{ fontSize: '13px !important' }} />}
+              onClick={() => { setSeminarioPreseleccionado(null); setOpenPago(true); }}
+              sx={{
+                px: 0,
+                color: 'secondary.main',
+                fontSize: '0.82rem',
+                letterSpacing: '0.06em',
+                '&:hover': { bgcolor: 'transparent', color: 'secondary.dark' },
+              }}
+            >
+              Registrar mi pago
+            </Button>
+          </Box>
+        )}
+
+        <RegistroPagoModal
+  open={openPago}
+  onClose={() => setOpenPago(false)}
+  seminarioIdInicial={seminarioPreseleccionado}
+/>
       </Container>
     </Box>
   );
 }
 
-function EventRow({ event, index, isDark, theme }) {
+function DetailRow({ icon, label, value }) {
+  if (!value) return null;
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.2 }}>
+      {icon && (
+        <Box sx={{ color: 'secondary.main', display: 'flex', mt: '2px' }}>
+          {icon}
+        </Box>
+      )}
+      <Box>
+        <Typography
+          sx={{
+            fontSize: '0.62rem',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+            mb: 0.3,
+          }}
+        >
+          {label}
+        </Typography>
+        <Typography sx={{ fontSize: '0.85rem', color: 'text.primary', lineHeight: 1.5 }}>
+          {value}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+function EventRow({ event, isDark, theme, onPagar, expanded, onToggle }) {
   const accent = typeColors[event.type] || '#9b2525';
+  const [imagenValida, setImagenValida] = useState(true);
+
+  const handleToggleClick = (e) => {
+    e.stopPropagation();
+    onToggle();
+  };
 
   return (
     <Box
-      role="article"
+      role="button"
       tabIndex={0}
+      aria-expanded={expanded}
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+      sx={{
+        py: { xs: 4, md: 5 },
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        px: { xs: 0, md: 1 },
+        mx: { xs: 0, md: -1 },
+        borderRadius: 1,
+      }}
+    >
+    <Box
       sx={{
         display: 'grid',
         gridTemplateColumns: { xs: '1fr', md: '88px 1fr auto' },
         gap: { xs: 2, md: 5 },
         alignItems: 'start',
-        py: { xs: 4, md: 5 },
-        borderBottom: `1px solid ${theme.palette.divider}`,
         cursor: 'pointer',
         transition: 'background-color 0.25s',
-        px: { xs: 0, md: 1 },
-        mx: { xs: 0, md: -1 },
         borderRadius: 1,
         '&:hover': {
           bgcolor: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.02)',
@@ -291,13 +463,24 @@ function EventRow({ event, index, isDark, theme }) {
       <Box
         sx={{
           display: { xs: 'none', md: 'flex' },
+          flexDirection: 'column',
           alignItems: 'flex-start',
+          gap: 0.5,
           pt: 0.5,
           flexShrink: 0,
         }}
       >
         <Button
-          endIcon={<ArrowForwardIcon sx={{ fontSize: '13px !important' }} />}
+          onClick={handleToggleClick}
+          endIcon={
+            <ExpandMoreIcon
+              sx={{
+                fontSize: '16px !important',
+                transition: 'transform 0.25s ease',
+                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              }}
+            />
+          }
           sx={{
             color: 'text.secondary',
             fontSize: '0.75rem',
@@ -306,9 +489,101 @@ function EventRow({ event, index, isDark, theme }) {
             '&:hover': { color: 'secondary.main', bgcolor: 'transparent' },
           }}
         >
-          Más información
+          {expanded ? 'Ver menos' : 'Más información'}
         </Button>
+
+        {event.id != null && (
+          <Button
+            onClick={(e) => { e.stopPropagation(); onPagar?.(event.id); }}
+            startIcon={<PaymentOutlinedIcon sx={{ fontSize: '15px !important' }} />}
+            sx={{
+              color: 'secondary.main',
+              fontSize: '0.75rem',
+              letterSpacing: '0.06em',
+              whiteSpace: 'nowrap',
+              '&:hover': { bgcolor: isDark ? 'rgba(155,37,37,.1)' : 'rgba(139,26,26,.06)' },
+            }}
+          >
+            Abono de arancel
+          </Button>
+        )}
       </Box>
+    </Box>
+
+      {/* Detalle expandido */}
+      <Collapse in={expanded} timeout={300} unmountOnExit>
+        <Box
+          onClick={(e) => e.stopPropagation()}
+          sx={{
+            mt: 4,
+            pt: 4,
+            borderTop: `1px dashed ${theme.palette.divider}`,
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: { xs: 3, md: 5 },
+            cursor: 'default',
+          }}
+        >
+          {event.imagen && imagenValida && (
+            <Box
+              component="img"
+              src={event.imagen}
+              alt={event.title}
+              onError={() => setImagenValida(false)}
+              sx={{
+                width: { xs: '100%', md: '48%' },
+                maxWidth: 460,
+                height: { xs: 220, md: 320 },
+                objectFit: 'cover',
+                border: `1px solid ${theme.palette.divider}`,
+                flexShrink: 0,
+              }}
+            />
+          )}
+
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            {event.description && (
+              <Typography
+                sx={{
+                  color: 'text.secondary',
+                  fontSize: '0.9rem',
+                  lineHeight: 1.85,
+                  mb: 3,
+                }}
+              >
+                {event.description}
+              </Typography>
+            )}
+
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                gap: 2.5,
+              }}
+            >
+              <DetailRow label="Fecha de inicio" value={formatearFecha(event.fechaInicio)} />
+              <DetailRow label="Fecha de cierre" value={formatearFecha(event.fechaFin)} />
+              <DetailRow icon={<PlaceOutlinedIcon sx={{ fontSize: 18 }} />} label="Lugar" value={event.lugar} />
+              <DetailRow label="Modalidad" value={event.modalidad} />
+              <DetailRow label="Ponente" value={event.speaker} />
+              <DetailRow
+                icon={<GroupsOutlinedIcon sx={{ fontSize: 18 }} />}
+                label="Cupo"
+                value={event.cupo != null ? `${event.cupo} lugares` : 'Sin límite'}
+              />
+              <DetailRow
+                label="Costo por sesión"
+                value={event.costoSesion != null ? `$${Number(event.costoSesion).toFixed(2)} MXN` : null}
+              />
+              <DetailRow
+                label="Costo curso completo"
+                value={event.costoCurso != null ? `$${Number(event.costoCurso).toFixed(2)} MXN` : null}
+              />
+            </Box>
+          </Box>
+        </Box>
+      </Collapse>
     </Box>
   );
 }

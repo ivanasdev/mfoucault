@@ -75,7 +75,7 @@ export default function Hero() {
               animation: 'fadeIn 1.2s ease 0.2s both',
             }}
           >
-            Est. 2024 · Ciudad de México · México
+            Est. 2026 · CDMX · México
           </Typography>
 
           {/* Main title */}
@@ -91,6 +91,7 @@ export default function Hero() {
             }}
           >
             Proyecto
+
           </Typography>
           <Typography
             variant="h1"
@@ -129,7 +130,7 @@ export default function Hero() {
               fontSize: { xs: '0.72rem', md: '0.8rem' },
               letterSpacing: '0.35em',
               textTransform: 'uppercase',
-              color: isDark ? 'rgba(200,190,173,0.6)' : 'rgba(90,80,64,0.65)',
+              color: isDark ? 'rgba(165, 50, 46, 0.6)' : 'rgba(43, 41, 38, 0.65)',
               mb: 8,
               fontFamily: '"Inter", sans-serif',
               animation: 'fadeIn 1s ease 0.45s both',

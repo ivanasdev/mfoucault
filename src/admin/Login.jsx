@@ -40,6 +40,7 @@ export default function Login() {
           <div style={s.field}>
             <label style={s.label}>Correo electrónico</label>
             <input
+              className="cmf-input"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -53,6 +54,7 @@ export default function Login() {
           <div style={s.field}>
             <label style={s.label}>Contraseña</label>
             <input
+              className="cmf-input"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -65,7 +67,7 @@ export default function Login() {
 
           {error && <p style={s.error}>{error}</p>}
 
-          <button type="submit" style={s.btn} disabled={loading}>
+          <button type="submit" className="cmf-btn-primary" style={s.btn} disabled={loading}>
             {loading ? 'Verificando...' : 'Ingresar'}
           </button>
         </form>
